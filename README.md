@@ -1,1 +1,1 @@
-# Smit-Patel
+# Physical Activity classification
