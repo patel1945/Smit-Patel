@@ -1,0 +1,137 @@
+---
+title: "Exploratory_dataAnalysis"
+author: "Smit Patel"
+date: "12/5/2020"
+output: word_document
+---
+
+#Data import with appropriate classes
+```{r}
+#setwd("F:\\CPTS_575\\Project")
+Data <- read.csv("Final_Df_5.csv", sep=",", header=T)
+head(Data)
+summary(Data)
+str(Data)
+Data$Participant=as.factor(Data$Participant)
+Data$Physical_Activity=as.factor(Data$Physical_Activity)
+levels(Data$Physical_Activity)
+levels(Data$Participant)
+```
+
+#Exploratory ploting
+```{r}
+summary(Data$Physdataical_Activity)
+prop.table(table(Data$Physical_Activity))*100
+prop.table(table(Data$Participant))*100
+dim(Data)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+#data description
+freq=Data%>%count(Participant, Physical_Activity)
+ggplot(data=freq)+geom_col(aes(x=Participant, y=n, fill=Physical_Activity))+labs(y="Count")
+
+
+#comparing speed for all labels
+g1=ggplot(data=Data, aes(y=SPEED,fill=Physical_Activity))+geom_boxplot(na.rm=TRUE)
+Data%>%group_by(Physical_Activity)%>%summarise(mean_speed=mean(SPEED, na.rm=T))
+
+#comparing steps for all labels
+g2=ggplot(data=Data, aes(y=steps,fill=Physical_Activity))+geom_boxplot(na.rm=TRUE)
+Data%>%group_by(Physical_Activity)%>%summarise(mean_steps_per10sec=mean(steps, na.rm=T))
+
+#Heading
+g3=ggplot(data=Data, aes(y=ALTITUDE,fill=Physical_Activity))+geom_boxplot(na.rm=TRUE)
+
+grid.arrange(g1,g2)
+
+#comparing vm for all labels
+ggplot(data=Data, aes(y=vm,fill=Physical_Activity))+geom_boxplot(na.rm=TRUE)
+
+
+#comparing inclines for all labels
+g.o=ggplot(data=Data, aes(y=inclineOff,fill=Physical_Activity))+geom_boxplot(na.rm = T)
+#Incline Sitting has high values for sitting so that is something
+g.si=ggplot(data=Data, aes(y=inclineSitting,fill=Physical_Activity))+geom_boxplot(na.rm = TRUE)
+#Incline Standing clearly has values for standing, walking and Biking
+g.st=ggplot(data=Data, aes(y=inclineStanding,fill=Physical_Activity))+geom_boxplot(na.rm = TRUE)
+#Incline lying clearly shows lying
+g.l=ggplot(data=Data, aes(y=inclineLying,fill=Physical_Activity))+geom_boxplot(na.rm=TRUE)
+
+grid.arrange(g.o, g.si)
+grid.arrange(g.st, g.l)
+
+#comparing lux for all labels
+ggplot(data=Data, aes(y=lux,fill=Physical_Activity))+geom_boxplot(na.rm = TRUE) #remove lux, there is no camparable values
+
+#comparing Axis for all lables
+ggplot(data=Data, aes(x=axis1, color=Physical_Activity))+geom_histogram(na.rm=TRUE)
+ggplot(data=Data, aes(x=axis2, color=Physical_Activity))+geom_histogram(na.rm=TRUE)
+ggplot(data=Data, aes(x=axis3, color=Physical_Activity))+geom_histogram(na.rm=TRUE)
+
+#logically box plot of axis does not make sense but done it for the sake of doing it
+g1=ggplot(data=Data, aes(y=axis1,fill=Physical_Activity))+geom_boxplot(na.rm = TRUE)
+g2=ggplot(data=Data, aes(y=axis2,fill=Physical_Activity))+geom_boxplot(na.rm=TRUE)
+g3=ggplot(data=Data, aes(y=axis3,fill=Physical_Activity))+geom_boxplot()
+grid.arrange(g1,g2,g3)
+ggplot(data=Data, aes(x=SPEED, color=Physical_Activity=="Walking"))+geom_histogram(binwidth = 1)
+
+
+Data%>%filter(Physical_Activity=="Walking")%>%mean(Data$SPEED)
+
+
+summary(Data$SPEED)
+
+Data%>%filter(Physical_Activity=="Walking")%>%ggplot(aes(x=SPEED, color=Physical_Activity))+geom_histogram(binwidth = 1)
+
+```
+
+#change in Lat, long and altitude
+```{r}
+library(dplyr)
+loc=Data%>%select(LONGITUDE,  LATITUDE, ALTITUDE)
+empty=c("","","")
+C=as.data.frame(rbind(empty, loc))
+str(C)
+C$LONGITUDE=as.numeric(C$LONGITUDE)
+C$LATITUDE=as.numeric(C$LATITUDE)
+C$ALTITUDE=as.numeric(C$ALTITUDE)
+str(loc)
+Data_0=Data
+Data_0[nrow(Data)+1,]=NA
+Data_0$LONGITUDE_C=Data_0$LONGITUDE-C$LONGITUDE
+Data_0$LATITUDE_C=Data_0$LATITUDE-C$LATITUDE
+Data_0$ALTITUDE_C=Data_0$ALTITUDE-C$ALTITUDE
+summary(Data_0)
+```
+
+#Exploratory on location data
+```{r}
+#comapring altitude for all labels
+ggplot(data=Data_0, aes(y=ALTITUDE_C,fill=Physical_Activity))+geom_boxplot(na.rm = TRUE)
+#mapping all participants
+library(ggmap)
+ggplot(data=Data, aes(x=LONGITUDE, y=LATITUDE,color=Participant)) + borders("county") + geom_point() + coord_quickmap()+xlim(-117.500, -117.300)+ ylim(47.6, 47.8)
+
+
+```
+
+#creating per minute data
+```{r}
+yolo=Data%>%Time
+head(yolo)
+Data$Time=as.time
+class(Data$Time)
+
+as.POSIXlt(Data_0$Time, format = "%H:%M")
+Data_0$Time
+yolo=Data_0%>%filter(Time>="00:00"|Time="%H:%M:00")
+yolo
+
+Data_0 %>%
+mutate(foo = as.numeric(Time, format="%H:%M:%S"))%>%
+filter(between(foo, 000000, 235900)) %>%
+select(-foo)
+
+```
+

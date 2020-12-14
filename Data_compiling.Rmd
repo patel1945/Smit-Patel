@@ -1,0 +1,122 @@
+---
+title: "Project_DS"
+author: "Smit & Swarnita"
+date: "11/3/2020"
+output: word_document
+---
+```{r, Accelerometer}
+library(RSQLite)
+library(PhysicalActivity)
+library(readr)
+library(dplyr)
+A_1=readActigraph("~/R/CPTS575/GPS_Accelorometer_Clean/GPS_Accelorometer_Clean/Participant1/AccelrometerData.agd")
+A_2=readActigraph("~/R/CPTS575/GPS_Accelorometer_Clean/GPS_Accelorometer_Clean/Participant2/AccelrometerData.agd")
+A_3=readActigraph("~/R/CPTS575/GPS_Accelorometer_Clean/GPS_Accelorometer_Clean/Participant3/AccelrometerData.agd")
+
+A_1=A_1%>%mutate(participant=1)
+A_2=A_2%>%mutate(participant=2)
+A_3=A_3%>%mutate(participant=3)
+
+A=as.data.frame(rbind(A_1, A_2, A_3))
+A$participant=as.factor(A$participant)
+str(A)
+
+```
+
+```{r, GPS}
+library(readr)
+library(dplyr)
+library(lubridate)
+library(hms)
+library(tidyverse)
+# require(devtools)
+# install_github("Displayr/flipTime")
+# library(fliptime)
+
+GPSData_1 <- read_csv("~/R/CPTS575/GPS_Accelorometer_Clean/GPS_Accelorometer_Clean/Participant1/GPSData.csv")
+GPSData_2 <- read_csv("~/R/CPTS575/GPS_Accelorometer_Clean/GPS_Accelorometer_Clean/Participant2/GPSData.csv")
+GPSData_3 <- read_csv("~/R/CPTS575/GPS_Accelorometer_Clean/GPS_Accelorometer_Clean/Participant3/GPSData.csv")
+
+GPSData_1=GPSData_1%>%mutate(Participant=1)
+GPSData_2=GPSData_2%>%mutate(Participant=2)
+GPSData_3=GPSData_3%>%mutate(Participant=3)
+
+GPS=as.data.frame(rbind(GPSData_1, GPSData_2, GPSData_3))
+GPS$Participant=as.factor(GPS$Participant)
+str(GPS)
+GPS=select(GPS, c("Participant",
+                  "TRACK ID",
+                  "UTC DATE",
+                  "UTC TIME",
+                  "LATITUDE",
+                  "LONGITUDE",
+                  "ALTITUDE",
+                  "SPEED",
+                  "HEADING")
+                  )
+
+str(GPS)
+
+#GPS
+#Date 
+GPS$Date=as.Date(GPS$`UTC DATE`, "%m/%d/%Y")
+
+
+
+#Time
+#tmp=strptime(as.character(GPS$`UTC TIME`),"%H:%M:%S",tz="UTC")
+tmp=GPS$`UTC TIME`
+a=second(tmp)
+t=as.POSIXct(c())
+
+for(i in 1:length(tmp)){
+  if(a[i]%%10 !=0)
+    {
+     z=10-(a[i]%%10)
+     t[i]=as_datetime(tmp[i])+dseconds(z)
+     # t[i]=format(as.POSIXct(t[i]),tz="UTC",usetz=TRUE)
+  }else{
+    t[i]=tmp[i]
+    }
+}
+
+attr(t, "tzone") <- "UTC"
+#Check
+unique(second(t))
+
+
+GPS$Time=format(as.POSIXct(t), format = "%H:%M:%S")
+
+
+
+# z=strptime(paste(GPS$`UTC DATE`),"%m/%d/%y",tz="UTC")
+# z=as.Date(z)
+
+
+
+# Group GPS data by time
+GPS1= GPS
+GPS1$`UTC DATE`=NULL
+GPS1$`UTC TIME`=NULL
+
+
+df = GPS1 %>% 
+     group_by(Date,Time) %>% 
+     slice(tail(row_number(), 1))
+
+
+#Accelerometer
+#Date
+A$Date=as.Date(A$TimeStamp,tz="UTC")
+
+#Time
+A$Time=format(as.POSIXct(A$TimeStamp), format = "%H:%M:%S")
+unique(second(A$TimeStamp))
+A$TimeStamp=NULL
+
+#Join
+Final_Df = A %>% full_join(df)
+write.csv(Final_Df,"Final_df.csv")
+
+```
+
